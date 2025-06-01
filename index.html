@@ -35,7 +35,6 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            max-width: 100%;
             height: 100vh;
         }
         
@@ -64,21 +63,6 @@
             padding: 20px;
             display: flex;
             flex-direction: column;
-            scrollbar-width: thin;
-            scrollbar-color: var(--primary-accent) var(--darker-bg);
-        }
-        
-        #chat-messages::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        #chat-messages::-webkit-scrollbar-track {
-            background: var(--darker-bg);
-        }
-        
-        #chat-messages::-webkit-scrollbar-thumb {
-            background-color: var(--primary-accent);
-            border-radius: 3px;
         }
         
         .message {
@@ -107,7 +91,6 @@
             padding: 12px 16px;
             border-radius: 18px;
             line-height: 1.5;
-            font-size: 1rem;
         }
         
         .user-message .message-content {
@@ -119,7 +102,6 @@
         .ai-message .message-content {
             background-color: rgba(255, 255, 255, 0.08);
             border-bottom-left-radius: 4px;
-            color: var(--text-primary);
         }
         
         .message-icon {
@@ -129,7 +111,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1rem;
             flex-shrink: 0;
         }
         
@@ -158,9 +139,7 @@
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 18px;
             color: var(--text-primary);
-            font-size: 1rem;
             outline: none;
-            transition: border-color 0.2s;
         }
         
         #user-input:focus {
@@ -174,65 +153,29 @@
             border-radius: 18px;
             padding: 0 24px;
             cursor: pointer;
-            font-size: 1rem;
             font-weight: 500;
-            transition: background-color 0.2s, transform 0.1s;
         }
         
-        #send-btn:hover {
-            background-color: var(--secondary-accent);
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
         }
         
-        #send-btn:active {
-            transform: scale(0.98);
-        }
-        
-        .loading-dots {
-            display: inline-flex;
-            align-items: center;
-            height: 20px;
-        }
-        
-        .loading-dots span {
-            display: inline-block;
+        .typing-dot {
             width: 8px;
             height: 8px;
-            border-radius: 50%;
             background-color: var(--primary-accent);
-            margin: 0 3px;
-            animation: bounce 1.4s infinite ease-in-out both;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out;
         }
         
-        .loading-dots span:nth-child(1) {
-            animation-delay: -0.32s;
-        }
-        
-        .loading-dots span:nth-child(2) {
-            animation-delay: -0.16s;
-        }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
         
         @keyframes bounce {
             0%, 80%, 100% { transform: scale(0); }
             40% { transform: scale(1); }
-        }
-        
-        @media (max-width: 768px) {
-            .message {
-                max-width: 95%;
-            }
-            
-            .message-content {
-                padding: 10px 14px;
-                font-size: 0.95rem;
-            }
-            
-            #input-area {
-                padding: 12px;
-            }
-            
-            #user-input {
-                padding: 10px 14px;
-            }
         }
     </style>
 </head>
@@ -269,7 +212,7 @@
         const userInput = document.getElementById('user-input');
         const sendBtn = document.getElementById('send-btn');
         
-        // Function to add message to chat
+        // Add message to chat
         function addMessage(role, text) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${role}-message`;
@@ -281,11 +224,15 @@
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
             
-            if (text === 'loading') {
-                const loadingDiv = document.createElement('div');
-                loadingDiv.className = 'loading-dots';
-                loadingDiv.innerHTML = '<span></span><span></span><span></span>';
-                contentDiv.appendChild(loadingDiv);
+            if (text === 'typing') {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'typing-indicator';
+                typingDiv.innerHTML = `
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                `;
+                contentDiv.appendChild(typingDiv);
             } else {
                 contentDiv.textContent = text;
             }
@@ -299,8 +246,8 @@
             return contentDiv;
         }
         
-        // Function to call Gemini API
-        async function callGeminiAPI(prompt) {
+        // Call Gemini API
+        async function getAIResponse(prompt) {
             try {
                 const response = await fetch(API_URL, {
                     method: 'POST',
@@ -309,71 +256,50 @@
                     },
                     body: JSON.stringify({
                         contents: [{
-                            parts: [{
-                                text: prompt
-                            }]
+                            parts: [{ text: prompt }]
                         }]
                     })
                 });
                 
-                if (!response.ok) {
-                    throw new Error(`API request failed with status ${response.status}`);
-                }
-                
                 const data = await response.json();
-                
-                // Fix: Handle cases where response structure might differ
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    return data.candidates[0].content.parts[0].text;
-                } else {
-                    return "I didn't understand that. Could you try again?";
-                }
+                return data.candidates[0].content.parts[0].text;
             } catch (error) {
-                console.error('Error calling Gemini API:', error);
-                return "Sorry, I encountered an error. Please try again.";
+                console.error("API Error:", error);
+                return "Sorry, I couldn't process your request.";
             }
         }
         
-        // Event listener for send button
-        async function handleSend() {
+        // Handle message sending
+        async function sendMessage() {
             const message = userInput.value.trim();
+            if (!message) return;
             
-            if (message) {
-                // Add user message
-                addMessage('user', message);
-                userInput.value = '';
-                
-                // Add loading indicator for AI response
-                const aiContentDiv = addMessage('ai', 'loading');
-                
-                try {
-                    // Call Gemini API
-                    const aiResponse = await callGeminiAPI(message);
-                    
-                    // Replace loading indicator with actual response
-                    aiContentDiv.innerHTML = '';
-                    aiContentDiv.textContent = aiResponse;
-                } catch (error) {
-                    aiContentDiv.innerHTML = '';
-                    aiContentDiv.textContent = "Error: Failed to get response";
-                }
-                
-                // Scroll to bottom
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
+            // Add user message
+            addMessage('user', message);
+            userInput.value = '';
+            
+            // Show typing indicator
+            const aiResponseDiv = addMessage('ai', 'typing');
+            
+            // Get AI response
+            const aiResponse = await getAIResponse(message);
+            
+            // Replace typing with actual response
+            aiResponseDiv.innerHTML = '';
+            aiResponseDiv.textContent = aiResponse;
+            
+            // Scroll to bottom
+            chatMessages.scrollTop = chatMessages.scrollHeight;
         }
         
         // Event listeners
-        sendBtn.addEventListener('click', handleSend);
-        
-        userInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                handleSend();
-            }
+        sendBtn.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
         });
         
         // Focus input on load
         userInput.focus();
     </script>
 </body>
-    </html>
+</html>
