@@ -321,15 +321,21 @@
                 }
                 
                 const data = await response.json();
-                return data.candidates[0].content.parts[0].text;
+                
+                // Fix: Handle cases where response structure might differ
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    return data.candidates[0].content.parts[0].text;
+                } else {
+                    return "I didn't understand that. Could you try again?";
+                }
             } catch (error) {
                 console.error('Error calling Gemini API:', error);
-                return "Sorry, I encountered an error processing your request.";
+                return "Sorry, I encountered an error. Please try again.";
             }
         }
         
         // Event listener for send button
-        sendBtn.addEventListener('click', async function() {
+        async function handleSend() {
             const message = userInput.value.trim();
             
             if (message) {
@@ -340,22 +346,29 @@
                 // Add loading indicator for AI response
                 const aiContentDiv = addMessage('ai', 'loading');
                 
-                // Call Gemini API
-                const aiResponse = await callGeminiAPI(message);
-                
-                // Replace loading indicator with actual response
-                aiContentDiv.innerHTML = '';
-                aiContentDiv.textContent = aiResponse;
+                try {
+                    // Call Gemini API
+                    const aiResponse = await callGeminiAPI(message);
+                    
+                    // Replace loading indicator with actual response
+                    aiContentDiv.innerHTML = '';
+                    aiContentDiv.textContent = aiResponse;
+                } catch (error) {
+                    aiContentDiv.innerHTML = '';
+                    aiContentDiv.textContent = "Error: Failed to get response";
+                }
                 
                 // Scroll to bottom
                 chatMessages.scrollTop = chatMessages.scrollHeight;
             }
-        });
+        }
         
-        // Also work with Enter key
+        // Event listeners
+        sendBtn.addEventListener('click', handleSend);
+        
         userInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
-                sendBtn.click();
+                handleSend();
             }
         });
         
@@ -363,4 +376,4 @@
         userInput.focus();
     </script>
 </body>
-</html>
+    </html>
