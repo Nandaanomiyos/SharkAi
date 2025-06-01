@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Shark AI 🦈</title>
     <style>
         :root {
             --dark-bg: #0a0a0a;
@@ -10,7 +11,7 @@
             --primary-accent: #00a8ff;
             --secondary-accent: #0095e0;
             --text-primary: #f0f0f0;
-            --text-secondary: #b0b0b0;
+            --safe-area: env(safe-area-inset-bottom, 20px);
         }
         
         * {
@@ -20,11 +21,11 @@
         }
         
         body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
             background-color: var(--dark-bg);
             color: var(--text-primary);
-            height: 100vh;
-            width: 100vw;
+            height: 100%;
+            width: 100%;
             overflow: hidden;
             display: flex;
             flex-direction: column;
@@ -34,39 +35,51 @@
             flex: 1;
             display: flex;
             flex-direction: column;
-            height: 100vh;
+            height: calc(100vh - var(--safe-area));
+            max-height: -webkit-fill-available;
+            padding-bottom: var(--safe-area);
         }
         
         #chat-header {
             background-color: var(--darker-bg);
-            padding: 16px 24px;
+            padding: 12px 16px;
             border-bottom: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
         
-        
+        #chat-header h1 {
+            font-size: 1.2rem;
+            font-weight: 600;
         }
         
         .logo-icon {
-            font-size: 1.8rem;
+            font-size: 1.5rem;
             color: var(--primary-accent);
         }
         
         #chat-messages {
             flex: 1;
             overflow-y: auto;
-            padding: 20px;
+            padding: 12px 16px;
             display: flex;
             flex-direction: column;
+            scrollbar-width: none;
+        }
+        
+        #chat-messages::-webkit-scrollbar {
+            display: none;
         }
         
         .message {
             display: flex;
-            gap: 16px;
-            margin-bottom: 20px;
-            max-width: 90%;
+            gap: 12px;
+            margin-bottom: 15px;
+            max-width: 85%;
             animation: fadeIn 0.3s ease-out;
         }
         
@@ -85,9 +98,11 @@
         }
         
         .message-content {
-            padding: 12px 16px;
-            border-radius: 18px;
-            line-height: 1.5;
+            padding: 10px 14px;
+            border-radius: 14px;
+            line-height: 1.4;
+            font-size: 0.95rem;
+            word-break: break-word;
         }
         
         .user-message .message-content {
@@ -102,13 +117,14 @@
         }
         
         .message-icon {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             flex-shrink: 0;
+            margin-top: 2px;
         }
         
         .user-message .message-icon {
@@ -122,21 +138,25 @@
         }
         
         #input-area {
-            padding: 16px;
+            padding: 12px 16px;
             background-color: var(--darker-bg);
             border-top: 1px solid rgba(255, 255, 255, 0.08);
             display: flex;
-            gap: 12px;
+            gap: 8px;
+            position: sticky;
+            bottom: 0;
         }
         
         #user-input {
             flex: 1;
-            padding: 12px 16px;
+            padding: 10px 14px;
             background-color: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 18px;
             color: var(--text-primary);
             outline: none;
+            font-size: 0.95rem;
+            min-height: 40px;
         }
         
         #user-input:focus {
@@ -148,20 +168,22 @@
             color: white;
             border: none;
             border-radius: 18px;
-            padding: 0 24px;
+            padding: 0 16px;
+            min-width: 60px;
             cursor: pointer;
             font-weight: 500;
+            font-size: 0.95rem;
         }
         
         .typing-indicator {
             display: flex;
-            gap: 4px;
-            padding: 12px 16px;
+            gap: 5px;
+            padding: 10px 14px;
         }
         
         .typing-dot {
-            width: 8px;
-            height: 8px;
+            width: 7px;
+            height: 7px;
             background-color: var(--primary-accent);
             border-radius: 50%;
             animation: bounce 1.4s infinite ease-in-out;
@@ -179,7 +201,8 @@
 <body>
     <div id="chat-container">
         <div id="chat-header">
-            
+            <div class="logo-icon">🦈</div>
+            <h1>Shark AI</h1>
         </div>
         
         <div id="chat-messages">
@@ -296,6 +319,14 @@
         
         // Focus input on load
         userInput.focus();
+        
+        // Adjust for mobile viewport
+        function resizeHandler() {
+            document.documentElement.style.setProperty('--safe-area', `${window.visualViewport ? window.visualViewport.height : window.innerHeight}px`);
+        }
+        
+        window.addEventListener('resize', resizeHandler);
+        resizeHandler();
     </script>
 </body>
 </html>
