@@ -290,6 +290,26 @@
             return contentDiv;
         }
         
+        // Simulate typing effect
+        async function typeResponse(element, text) {
+            return new Promise(resolve => {
+                let i = 0;
+                const speed = 20; // typing speed in ms
+                
+                function typeWriter() {
+                    if (i < text.length) {
+                        element.textContent = text.substring(0, i + 1);
+                        i++;
+                        setTimeout(typeWriter, speed);
+                    } else {
+                        resolve();
+                    }
+                }
+                
+                typeWriter();
+            });
+        }
+        
         // Call Gemini API
         async function getAIResponse(prompt) {
             try {
@@ -332,9 +352,11 @@
             // Get AI response
             const aiResponse = await getAIResponse(message);
             
-            // Replace typing with actual response
+            // Clear typing indicator
             aiResponseDiv.innerHTML = '';
-            aiResponseDiv.textContent = aiResponse;
+            
+            // Simulate typing effect
+            await typeResponse(aiResponseDiv, aiResponse);
             
             // Scroll to bottom
             chatMessages.scrollTop = chatMessages.scrollHeight;
