@@ -144,6 +144,14 @@
             border-top-left-radius: 4px;
         }
         
+        .message-content b, .message-content strong {
+            font-weight: 600;
+        }
+        
+        .message-content i, .message-content em {
+            font-style: italic;
+        }
+        
         #input-container {
             padding: 16px 0;
         }
@@ -256,6 +264,15 @@
             this.style.height = (this.scrollHeight) + 'px';
         });
         
+        // Process markdown formatting
+        function processMarkdown(text) {
+            // Replace **bold** with <b>bold</b>
+            text = text.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+            // Replace *italic* with <i>italic</i>
+            text = text.replace(/\*(.*?)\*/g, '<i>$1</i>');
+            return text;
+        }
+        
         // Add message to chat
         function addMessage(role, text) {
             const messageDiv = document.createElement('div');
@@ -278,7 +295,7 @@
                 `;
                 contentDiv.appendChild(typingDiv);
             } else {
-                contentDiv.textContent = text;
+                contentDiv.innerHTML = processMarkdown(text);
             }
             
             messageDiv.appendChild(avatarDiv);
@@ -290,16 +307,25 @@
             return contentDiv;
         }
         
-        // Simulate typing effect
+        // Simulate typing effect (faster version)
         async function typeResponse(element, text) {
             return new Promise(resolve => {
                 let i = 0;
-                const speed = 20; // typing speed in ms
+                const speed = 10; // faster typing speed (reduced from 20ms to 10ms)
+                const chunkSize = 3; // type multiple characters at once
                 
                 function typeWriter() {
                     if (i < text.length) {
-                        element.textContent = text.substring(0, i + 1);
-                        i++;
+                        // Process markdown as we type
+                        const chunk = text.substring(i, i + chunkSize);
+                        const processedChunk = processMarkdown(chunk);
+                        
+                        // Insert at the end while preserving existing HTML
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = element.innerHTML + processedChunk;
+                        element.innerHTML = tempDiv.innerHTML;
+                        
+                        i += chunkSize;
                         setTimeout(typeWriter, speed);
                     } else {
                         resolve();
@@ -355,7 +381,7 @@
             // Clear typing indicator
             aiResponseDiv.innerHTML = '';
             
-            // Simulate typing effect
+            // Simulate typing effect (faster)
             await typeResponse(aiResponseDiv, aiResponse);
             
             // Scroll to bottom
